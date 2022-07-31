@@ -23,7 +23,6 @@ import static de.tudarmstadt.ukp.clarin.webanno.support.lambda.LambdaBehavior.en
 import static de.tudarmstadt.ukp.clarin.webanno.support.lambda.LambdaBehavior.visibleWhen;
 import static de.tudarmstadt.ukp.clarin.webanno.support.wicket.WicketUtil.refreshPage;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -208,7 +207,7 @@ public class CurationSidebar
             // Optional<AjaxRequestTarget> target =
             // RequestCycle.get().find(AjaxRequestTarget.class);
             // getAnnotationPage().actionLoadDocument(target.orElseGet(null));
-            new RestartResponseException(getPage());
+            throw new RestartResponseException(getPage());
         }
     }
 
@@ -393,10 +392,8 @@ public class CurationSidebar
 
     private List<User> listSelectedUsers()
     {
-        return curationSidebarService
-                .listUsersSelectedForCuration(userRepository.getCurrentUsername(),
-                        getModelObject().getProject().getId())
-                .orElse(emptyList());
+        return curationSidebarService.listUsersSelectedForCuration(
+                userRepository.getCurrentUsername(), getModelObject().getProject().getId());
     }
 
     /**

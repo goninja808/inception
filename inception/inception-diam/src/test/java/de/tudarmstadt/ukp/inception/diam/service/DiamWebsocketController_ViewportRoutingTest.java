@@ -106,6 +106,7 @@ import de.tudarmstadt.ukp.inception.rendering.vmodel.VID;
 import de.tudarmstadt.ukp.inception.rendering.vmodel.VRange;
 import de.tudarmstadt.ukp.inception.rendering.vmodel.VSpan;
 import de.tudarmstadt.ukp.inception.schema.config.AnnotationSchemaServiceAutoConfiguration;
+import de.tudarmstadt.ukp.inception.support.findbugs.SuppressFBWarnings;
 import de.tudarmstadt.ukp.inception.websocket.config.WebsocketAutoConfiguration;
 import de.tudarmstadt.ukp.inception.websocket.config.WebsocketSecurityConfig;
 import de.tudarmstadt.ukp.inception.websocket.config.stomp.LambdaStompFrameHandler;
@@ -203,6 +204,7 @@ public class DiamWebsocketController_ViewportRoutingTest
         entityManager.clear();
     }
 
+    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED")
     @Test
     public void thatViewportBasedMessageRoutingWorks()
         throws InterruptedException, ExecutionException, TimeoutException

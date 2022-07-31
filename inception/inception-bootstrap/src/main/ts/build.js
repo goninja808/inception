@@ -15,34 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.tudarmstadt.ukp.inception.recommendation.sidebar;
+const fs = require('fs')
 
-import org.apache.wicket.ajax.AjaxRequestTarget;
-
-import de.tudarmstadt.ukp.inception.recommendation.model.RecommenderEvaluationScoreMetricEnum;
-
-public class DropDownEvent
-{
-    public RecommenderEvaluationScoreMetricEnum selectedValue;
-    public AjaxRequestTarget target;
-
-    public RecommenderEvaluationScoreMetricEnum getSelectedValue()
-    {
-        return selectedValue;
-    }
-
-    public void setSelectedValue(RecommenderEvaluationScoreMetricEnum selectedValue)
-    {
-        this.selectedValue = selectedValue;
-    }
-
-    public AjaxRequestTarget getTarget()
-    {
-        return target;
-    }
-
-    public void setTarget(AjaxRequestTarget target)
-    {
-        this.target = target;
-    }
-}
+fs.copyFileSync(
+  'node_modules/bootstrap/dist/js/bootstrap.bundle.js', 
+  '../../../target/js/de/tudarmstadt/ukp/inception/bootstrap/bootstrap.bundle.js')
+fs.copyFileSync(
+  'node_modules/bootstrap/dist/js/bootstrap.bundle.js.map', 
+  '../../../target/js/de/tudarmstadt/ukp/inception/bootstrap/bootstrap.bundle.js.map')
+fs.copyFileSync(
+  'node_modules/bootstrap/dist/js/bootstrap.bundle.min.js', 
+  '../../../target/js/de/tudarmstadt/ukp/inception/bootstrap/bootstrap.bundle.min.js')
+fs.copyFileSync(
+  'node_modules/bootstrap/dist/js/bootstrap.bundle.min.js.map', 
+  '../../../target/js/de/tudarmstadt/ukp/inception/bootstrap/bootstrap.bundle.min.js.map')

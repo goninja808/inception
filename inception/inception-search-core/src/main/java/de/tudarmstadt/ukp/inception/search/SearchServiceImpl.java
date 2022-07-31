@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -47,7 +46,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 import org.apache.commons.lang3.Validate;
-import org.apache.uima.cas.CAS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -334,7 +332,8 @@ public class SearchServiceImpl
                     while (!pooledIndex.isIdle() && !pooledIndex.isDead()) {
                         try {
                             log.trace("Index recycle is forced but index is not idle - waiting...");
-                            Thread.sleep(1000);
+                            // Thread.sleep(1000);
+                            indexes.wait(1000);
                         }
                         catch (InterruptedException e) {
                             // Ignore
@@ -393,7 +392,7 @@ public class SearchServiceImpl
         log.trace("Starting afterDocumentCreate");
 
         // Schedule new document index process
-        enqueueIndexDocument(aEvent.getDocument(), "afterDocumentCreate", aEvent.getCas());
+        enqueueIndexDocument(aEvent.getDocument(), "afterDocumentCreate");
     }
 
     @TransactionalEventListener(fallbackExecution = true)
@@ -403,7 +402,7 @@ public class SearchServiceImpl
         log.trace("Starting afterAnnotationUpdate");
 
         // Schedule new document index process
-        enqueueIndexDocument(aEvent.getDocument(), "afterAnnotationUpdate", aEvent.getCas());
+        enqueueIndexDocument(aEvent.getDocument(), "afterAnnotationUpdate");
     }
 
     @TransactionalEventListener(fallbackExecution = true)
@@ -569,9 +568,8 @@ public class SearchServiceImpl
     }
 
     @Override
-    public StatisticsResult getProjectStatistics(User aUser, Project aProject,
-            OptionalInt aMinTokenPerDoc, OptionalInt aMaxTokenPerDoc,
-            Set<AnnotationFeature> aFeatures)
+    public StatisticsResult getProjectStatistics(User aUser, Project aProject, int aMinTokenPerDoc,
+            int aMaxTokenPerDoc, Set<AnnotationFeature> aFeatures)
         throws IOException, ExecutionException
     {
         try (PooledIndex pooledIndex = acquireIndex(aProject.getId())) {
@@ -586,8 +584,7 @@ public class SearchServiceImpl
 
     @Override
     public StatisticsResult getQueryStatistics(User aUser, Project aProject, String aQuery,
-            OptionalInt aMinTokenPerDoc, OptionalInt aMaxTokenPerDoc,
-            Set<AnnotationFeature> aFeatures)
+            int aMinTokenPerDoc, int aMaxTokenPerDoc, Set<AnnotationFeature> aFeatures)
         throws ExecutionException, IOException
     {
         try (PooledIndex pooledIndex = acquireIndex(aProject.getId())) {
@@ -828,26 +825,14 @@ public class SearchServiceImpl
         enqueue(new ReindexTask(aProject, aTrigger));
     }
 
-    private void enqueueIndexDocument(SourceDocument aSourceDocument, String aTrigger, CAS aCas)
+    private void enqueueIndexDocument(SourceDocument aSourceDocument, String aTrigger)
     {
-        try {
-            enqueue(new IndexSourceDocumentTask(aSourceDocument, aTrigger, casToByteArray(aCas)));
-        }
-        catch (IOException e) {
-            log.error("Unable to enqueue document {} for indexing", aSourceDocument, e);
-        }
+        enqueue(new IndexSourceDocumentTask(aSourceDocument, aTrigger));
     }
 
-    private void enqueueIndexDocument(AnnotationDocument aAnnotationDocument, String aTrigger,
-            CAS aCas)
+    private void enqueueIndexDocument(AnnotationDocument aAnnotationDocument, String aTrigger)
     {
-        try {
-            enqueue(new IndexAnnotationDocumentTask(aAnnotationDocument, aTrigger,
-                    casToByteArray(aCas)));
-        }
-        catch (IOException e) {
-            log.error("Unable to enqueue document {} for indexing", aAnnotationDocument, e);
-        }
+        enqueue(new IndexAnnotationDocumentTask(aAnnotationDocument, aTrigger));
     }
 
     /**

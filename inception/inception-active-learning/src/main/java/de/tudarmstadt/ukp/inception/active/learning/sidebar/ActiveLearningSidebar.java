@@ -279,7 +279,7 @@ public class ActiveLearningSidebar
         layersDropdown.setRequired(true);
         form.add(layersDropdown);
 
-        form.add(new LambdaAjaxSubmitLink(CID_START_SESSION_BUTTON, this::actionStartSession)
+        form.add(new LambdaAjaxSubmitLink<>(CID_START_SESSION_BUTTON, this::actionStartSession)
                 .add(visibleWhen(() -> !alStateModel.getObject().isSessionActive())));
         form.add(new LambdaAjaxLink(CID_STOP_SESSION_BUTTON, this::actionStopSession)
                 .add(visibleWhen(() -> alStateModel.getObject().isSessionActive())));
@@ -1055,6 +1055,9 @@ public class ActiveLearningSidebar
      * Listens to the user setting a feature on an annotation in the main annotation editor. Mind
      * that we do not need to listen to the creation of annotations since they have no effect on the
      * active learning sidebar as long as they have no features set.
+     * 
+     * @param aEvent
+     *            the event
      */
     @OnEvent
     public void onFeatureValueUpdated(FeatureValueUpdatedEvent aEvent)
@@ -1081,6 +1084,9 @@ public class ActiveLearningSidebar
 
     /**
      * Listens to the user deleting an annotation in the main annotation editor.
+     * 
+     * @param aEvent
+     *            the event
      */
     @OnEvent
     public void onAnnotationDeleted(SpanDeletedEvent aEvent)
@@ -1188,6 +1194,9 @@ public class ActiveLearningSidebar
 
     /**
      * Listens to the user accepting a recommendation in the main annotation editor.
+     * 
+     * @param aEvent
+     *            the event
      */
     @OnEvent
     public void onRecommendationAcceptEvent(AjaxRecommendationAcceptedEvent aEvent)
