@@ -26,7 +26,6 @@ import org.springframework.context.annotation.Lazy;
 
 import de.tudarmstadt.ukp.inception.diam.editor.actions.CreateRelationAnnotationHandler;
 import de.tudarmstadt.ukp.inception.diam.editor.actions.CreateSpanAnnotationHandler;
-import de.tudarmstadt.ukp.inception.diam.editor.actions.CustomActionHandler;
 import de.tudarmstadt.ukp.inception.diam.editor.actions.DeleteAnnotationHandler;
 import de.tudarmstadt.ukp.inception.diam.editor.actions.EditorAjaxRequestHandler;
 import de.tudarmstadt.ukp.inception.diam.editor.actions.EditorAjaxRequestHandlerExtensionPoint;
@@ -42,7 +41,10 @@ import de.tudarmstadt.ukp.inception.diam.editor.lazydetails.LazyDetailsLookupSer
 import de.tudarmstadt.ukp.inception.diam.editor.lazydetails.LazyDetailsLookupServiceImpl;
 import de.tudarmstadt.ukp.inception.diam.model.compact.CompactSerializer;
 import de.tudarmstadt.ukp.inception.diam.model.compact.CompactSerializerImpl;
+import de.tudarmstadt.ukp.inception.diam.model.compactv2.CompactSerializerV2;
+import de.tudarmstadt.ukp.inception.diam.model.compactv2.CompactSerializerV2Impl;
 import de.tudarmstadt.ukp.inception.editor.AnnotationEditorExtensionRegistry;
+import de.tudarmstadt.ukp.inception.rendering.config.AnnotationEditorProperties;
 import de.tudarmstadt.ukp.inception.rendering.pipeline.RenderingPipeline;
 import de.tudarmstadt.ukp.inception.rendering.vmodel.serialization.VDocumentSerializerExtensionPoint;
 import de.tudarmstadt.ukp.inception.schema.AnnotationSchemaService;
@@ -70,12 +72,6 @@ public class DiamAutoConfig
             AnnotationEditorExtensionRegistry aExtensionRegistry)
     {
         return new ExtensionActionHandler(aExtensionRegistry);
-    }
-
-    @Bean
-    public CustomActionHandler customActionHandler(AnnotationSchemaService aAnnotationService)
-    {
-        return new CustomActionHandler(aAnnotationService);
     }
 
     @Bean
@@ -140,8 +136,14 @@ public class DiamAutoConfig
     }
 
     @Bean
-    public CompactSerializer compactSerializer()
+    public CompactSerializer compactSerializer(AnnotationEditorProperties aProperties)
     {
-        return new CompactSerializerImpl();
+        return new CompactSerializerImpl(aProperties);
+    }
+
+    @Bean
+    public CompactSerializerV2 compactSerializerV2(AnnotationEditorProperties aProperties)
+    {
+        return new CompactSerializerV2Impl(aProperties);
     }
 }

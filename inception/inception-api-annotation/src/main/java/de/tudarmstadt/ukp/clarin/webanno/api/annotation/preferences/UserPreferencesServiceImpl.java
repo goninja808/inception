@@ -45,10 +45,10 @@ import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.PropertyAccessorFactory;
-import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import de.tudarmstadt.ukp.clarin.webanno.api.annotation.config.AnnotationAutoConfiguration;
 import de.tudarmstadt.ukp.clarin.webanno.api.config.RepositoryProperties;
 import de.tudarmstadt.ukp.clarin.webanno.model.AnnotationLayer;
 import de.tudarmstadt.ukp.clarin.webanno.model.Mode;
@@ -62,7 +62,12 @@ import de.tudarmstadt.ukp.inception.rendering.editorstate.AnnotationPreference;
 import de.tudarmstadt.ukp.inception.rendering.editorstate.AnnotatorState;
 import de.tudarmstadt.ukp.inception.schema.AnnotationSchemaService;
 
-@Component
+/**
+ * <p>
+ * This class is exposed as a Spring Component via
+ * {@link AnnotationAutoConfiguration#userPreferencesService}.
+ * </p>
+ */
 public class UserPreferencesServiceImpl
     implements UserPreferencesService
 {
@@ -141,12 +146,6 @@ public class UserPreferencesServiceImpl
         // data file. Otherwise, fall back to loading the legacy preferences
 
         AnnotationPreference pref = loadLegacyPreferences(aProject, aUsername, aMode);
-
-        // If the choice for remember layer is not enabled, hard-set to "true" which is the default
-        // and in the future the only option ;)
-        if (!annotationEditorProperties.isRememberLayerEnabled()) {
-            pref.setRememberLayer(true);
-        }
 
         return pref;
     }
@@ -267,7 +266,6 @@ public class UserPreferencesServiceImpl
                     .loadDefaultTraitsForProject(KEY_BRAT_EDITOR_MANAGER_PREFS, aProject)
                     .getDefaultPageSize());
             preference.setScrollPage(defaultPreferences.isAutoScroll());
-            preference.setRememberLayer(defaultPreferences.isRememberLayer());
         }
 
         // Get color preferences for each layer, init with default if not found
@@ -278,8 +276,7 @@ public class UserPreferencesServiceImpl
         }
         for (AnnotationLayer layer : annotationService.listAnnotationLayer(aProject)) {
             if (!colorPerLayer.containsKey(layer.getId())) {
-                colorPerLayer.put(layer.getId(),
-                        coloringService.getBestInitialStrategy(layer, preference));
+                colorPerLayer.put(layer.getId(), coloringService.getBestInitialStrategy(layer));
             }
         }
 

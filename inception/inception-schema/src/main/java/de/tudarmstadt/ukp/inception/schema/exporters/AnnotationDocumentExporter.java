@@ -22,6 +22,7 @@ import static de.tudarmstadt.ukp.clarin.webanno.api.ProjectService.DOCUMENT_FOLD
 import static de.tudarmstadt.ukp.clarin.webanno.api.ProjectService.PROJECT_FOLDER;
 import static de.tudarmstadt.ukp.clarin.webanno.api.export.FullProjectExportRequest.FORMAT_AUTO;
 import static de.tudarmstadt.ukp.clarin.webanno.model.Mode.ANNOTATION;
+import static de.tudarmstadt.ukp.clarin.webanno.security.UserDaoImpl.RESERVED_USERNAMES;
 import static de.tudarmstadt.ukp.clarin.webanno.support.WebAnnoConst.INITIAL_CAS_PSEUDO_USER;
 import static de.tudarmstadt.ukp.clarin.webanno.support.io.FastIOUtils.copy;
 import static java.lang.Math.ceil;
@@ -35,8 +36,10 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.io.FileUtils.copyFileToDirectory;
 import static org.apache.commons.io.FileUtils.forceDelete;
 import static org.apache.commons.io.FileUtils.forceMkdir;
+import static org.apache.commons.io.FilenameUtils.getExtension;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -52,6 +55,7 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -191,6 +195,22 @@ public class AnnotationDocumentExporter
             }
 
             try (CasStorageSession session = CasStorageSession.openNested()) {
+                FormatSupport format = null;
+                if (aRequest.getFormat() != null) {
+                    // Determine which format to use for export
+                    String formatId = FORMAT_AUTO.equals(aRequest.getFormat()) ? srcDoc.getFormat()
+                            : aRequest.getFormat();
+
+                    format = importExportService.getWritableFormatById(formatId).orElseGet(() -> {
+                        FormatSupport fallbackFormat = importExportService.getFallbackFormat();
+                        aMonitor.addMessage(LogMessage.warn(this, "Annotation: [%s] No writer "
+                                + "found for format [%s] - falling back to exporting as [%s] "
+                                + "instead.", srcDoc.getName(), formatId,
+                                fallbackFormat.getName()));
+                        return fallbackFormat;
+                    });
+                }
+
                 //
                 // Export initial CASes
                 //
@@ -215,28 +235,17 @@ public class AnnotationDocumentExporter
                     documentService.exportCas(srcDoc, INITIAL_CAS_PSEUDO_USER, os);
                 }
 
+                if (format != null) {
+                    exportAdditionalFormat(aStage, bulkOperationContext, srcDoc, format,
+                            INITIAL_CAS_PSEUDO_USER);
+                }
+
                 log.info("Exported annotation document content for user [{}] for source document "
                         + "{} in project {}", INITIAL_CAS_PSEUDO_USER, srcDoc, project);
 
                 //
                 // Export per-user annotation document
                 //
-
-                FormatSupport format = null;
-                if (aRequest.getFormat() != null) {
-                    // Determine which format to use for export
-                    String formatId = FORMAT_AUTO.equals(aRequest.getFormat()) ? srcDoc.getFormat()
-                            : aRequest.getFormat();
-
-                    format = importExportService.getWritableFormatById(formatId).orElseGet(() -> {
-                        FormatSupport fallbackFormat = importExportService.getFallbackFormat();
-                        aMonitor.addMessage(LogMessage.warn(this, "Annotation: [%s] No writer "
-                                + "found for format [%s] - falling back to exporting as [%s] "
-                                + "instead.", srcDoc.getName(), formatId,
-                                fallbackFormat.getName()));
-                        return fallbackFormat;
-                    });
-                }
 
                 // Export annotations from regular users
                 for (AnnotationDocument annDoc : srcToAnnIdx.computeIfAbsent(srcDoc,
@@ -249,30 +258,11 @@ public class AnnotationDocumentExporter
                             && !annDoc.getState().equals(AnnotationDocumentState.NEW)
                             && !annDoc.getState().equals(AnnotationDocumentState.IGNORE)) {
 
-                        File annSerDir = new File(aStage.getAbsolutePath() + ANNOTATION_CAS_FOLDER
-                                + srcDoc.getName());
-                        forceMkdir(annSerDir);
-                        try (OutputStream os = new FileOutputStream(
-                                new File(annSerDir, annDoc.getUser() + ".ser"))) {
-                            documentService.exportCas(srcDoc, annDoc.getUser(), os);
-                        }
+                        exportSerializedCas(aStage, srcDoc, annDoc);
 
                         if (format != null) {
-                            File annDocDir = new File(aStage.getAbsolutePath()
-                                    + ANNOTATION_ORIGINAL_FOLDER + srcDoc.getName());
-                            File annFile = null;
-                            try {
-                                annFile = importExportService.exportAnnotationDocument(srcDoc,
-                                        annDoc.getUser(), format, annDoc.getUser(), ANNOTATION,
-                                        false, bulkOperationContext);
-                                forceMkdir(annDocDir);
-                                copyFileToDirectory(annFile, annDocDir);
-                            }
-                            finally {
-                                if (annFile != null) {
-                                    forceDelete(annFile);
-                                }
-                            }
+                            exportAdditionalFormat(aStage, bulkOperationContext, srcDoc, format,
+                                    annDoc.getUser());
                         }
 
                         log.info("Exported annotation document content for user [{}] for " //
@@ -284,6 +274,48 @@ public class AnnotationDocumentExporter
 
             aMonitor.setProgress(initProgress + (int) ceil(((double) i) / documents.size() * 80.0));
             i++;
+        }
+    }
+
+    private void exportSerializedCas(File aStage, SourceDocument srcDoc, AnnotationDocument annDoc)
+        throws IOException, FileNotFoundException
+    {
+        File annSerDir = new File(
+                aStage.getAbsolutePath() + ANNOTATION_CAS_FOLDER + srcDoc.getName());
+        forceMkdir(annSerDir);
+        try (OutputStream os = new FileOutputStream(
+                new File(annSerDir, annDoc.getUser() + ".ser"))) {
+            documentService.exportCas(srcDoc, annDoc.getUser(), os);
+        }
+    }
+
+    private void exportAdditionalFormat(File aStage,
+            Map<Pair<Project, String>, Object> bulkOperationContext, SourceDocument srcDoc,
+            FormatSupport format, String aUsername)
+        throws UIMAException, IOException, ClassNotFoundException
+    {
+        File annDocDir = new File(
+                aStage.getAbsolutePath() + ANNOTATION_ORIGINAL_FOLDER + srcDoc.getName());
+        File annFile = null;
+        try {
+            annFile = importExportService.exportAnnotationDocument(srcDoc, aUsername, format,
+                    aUsername, ANNOTATION, false, bulkOperationContext);
+            forceMkdir(annDocDir);
+
+            if (userRepository.isValidUsername(aUsername)
+                    || RESERVED_USERNAMES.contains(aUsername)) {
+                // Safe-guard for legacy instances where user name validity has not been checked.
+                var filename = aUsername + "." + getExtension(annFile.getName());
+                FileUtils.copyFile(annFile, new File(annDocDir, filename));
+            }
+            else {
+                copyFileToDirectory(annFile, annDocDir);
+            }
+        }
+        finally {
+            if (annFile != null) {
+                forceDelete(annFile);
+            }
         }
     }
 

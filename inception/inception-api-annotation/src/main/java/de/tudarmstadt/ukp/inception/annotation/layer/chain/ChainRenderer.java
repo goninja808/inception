@@ -34,10 +34,10 @@ import java.util.Optional;
 
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.Feature;
-import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.TypeSystem;
 import org.apache.uima.cas.text.AnnotationFS;
+import org.apache.uima.jcas.cas.TOP;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 
 import de.tudarmstadt.ukp.clarin.webanno.api.annotation.rendering.Renderer_ImplBase;
@@ -96,7 +96,10 @@ public class ChainRenderer
     @Override
     public List<AnnotationFS> selectAnnotationsInWindow(CAS aCas, int aWindowBegin, int aWindowEnd)
     {
-        return aCas.select(chainType).map(a -> (AnnotationFS) a).collect(toList());
+        ChainAdapter typeAdapter = getTypeAdapter();
+        return aCas.select(typeAdapter.getAnnotationTypeName()) //
+                .map(a -> (AnnotationFS) a) //
+                .collect(toList());
     }
 
     @Override
@@ -129,8 +132,8 @@ public class ChainRenderer
 
         int colorIndex = 0;
         // Iterate over the chains
-        List<AnnotationFS> annotations = selectAnnotationsInWindow(aCas, aWindowBegin, aWindowEnd);
-        for (FeatureStructure chainFs : annotations) {
+        List<TOP> chains = aCas.select(typeAdapter.getChainTypeName()).asList();
+        for (TOP chainFs : chains) {
             AnnotationFS linkFs = (AnnotationFS) chainFs.getFeatureValue(chainFirst);
             AnnotationFS prevLinkFs = null;
 
@@ -153,8 +156,6 @@ public class ChainRenderer
                     continue; // Go to next link
                 }
 
-                String bratTypeName = typeAdapter.getEncodedTypeName();
-
                 // Render span
                 {
                     Optional<VRange> range = VRange.clippedRange(aResponse, linkFs);
@@ -166,8 +167,8 @@ public class ChainRenderer
                     String bratLabelText = TypeUtil.getUiLabelText(typeAdapter, linkFs,
                             (spanLabelFeature != null) ? asList(spanLabelFeature) : emptyList());
 
-                    VSpan span = new VSpan(typeAdapter.getLayer(), linkFs, bratTypeName,
-                            range.get(), colorIndex, bratLabelText);
+                    VSpan span = new VSpan(typeAdapter.getLayer(), linkFs, range.get(), colorIndex,
+                            bratLabelText);
                     annoToSpanIdx.put(linkFs, span);
                     aResponse.add(span);
 
@@ -190,8 +191,8 @@ public class ChainRenderer
                     }
 
                     aResponse.add(new VArc(typeAdapter.getLayer(),
-                            new VID(prevLinkFs, 1, VID.NONE, VID.NONE), bratTypeName, prevLinkFs,
-                            linkFs, colorIndex, bratLabelText));
+                            new VID(prevLinkFs, 1, VID.NONE, VID.NONE), prevLinkFs, linkFs,
+                            colorIndex, bratLabelText));
                 }
 
                 // Render errors if required features are missing

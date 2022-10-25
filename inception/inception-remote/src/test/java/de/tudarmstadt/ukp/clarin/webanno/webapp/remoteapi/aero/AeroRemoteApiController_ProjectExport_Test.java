@@ -18,6 +18,7 @@
 package de.tudarmstadt.ukp.clarin.webanno.webapp.remoteapi.aero;
 
 import static de.tudarmstadt.ukp.clarin.webanno.security.model.Role.ROLE_ADMIN;
+import static de.tudarmstadt.ukp.clarin.webanno.security.model.Role.ROLE_REMOTE;
 import static org.apache.commons.io.FileUtils.writeByteArrayToFile;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -42,6 +43,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -49,8 +51,11 @@ import de.tudarmstadt.ukp.clarin.webanno.security.UserDao;
 import de.tudarmstadt.ukp.clarin.webanno.security.model.User;
 import de.tudarmstadt.ukp.inception.log.config.EventLoggingAutoConfiguration;
 import de.tudarmstadt.ukp.inception.search.config.SearchServiceAutoConfiguration;
+import de.tudarmstadt.ukp.inception.support.deployment.DeploymentModeServiceImpl;
 
-@SpringBootTest(webEnvironment = WebEnvironment.MOCK, //
+@ActiveProfiles(DeploymentModeServiceImpl.PROFILE_AUTH_MODE_DATABASE)
+@SpringBootTest( //
+        webEnvironment = WebEnvironment.MOCK, //
         properties = { //
                 "spring.main.banner-mode=off", //
                 "remote-api.enabled=true", //
@@ -85,9 +90,9 @@ public class AeroRemoteApiController_ProjectExport_Test
     @BeforeEach
     void setup()
     {
-        adminActor = new MockAeroClient(context, "admin", "ADMIN");
+        adminActor = new MockAeroClient(context, "admin", "ADMIN", "REMOTE");
 
-        userRepository.create(new User("admin", ROLE_ADMIN));
+        userRepository.create(new User("admin", ROLE_ADMIN, ROLE_REMOTE));
     }
 
     @Test

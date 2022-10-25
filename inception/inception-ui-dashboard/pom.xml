@@ -20,7 +20,7 @@
   <parent>
     <groupId>de.tudarmstadt.ukp.inception.app</groupId>
     <artifactId>inception-app</artifactId>
-    <version>25.0-SNAPSHOT</version>
+    <version>26.0-SNAPSHOT</version>
   </parent>
   <artifactId>inception-ui-dashboard</artifactId>
   <name>INCEpTION - UI - Dashboard</name>
@@ -91,6 +91,10 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-collections4</artifactId>
+    </dependency>
     
     <dependency>
       <groupId>org.springframework</groupId>
@@ -113,11 +117,6 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.github.rjeschke</groupId>
-      <artifactId>txtmark</artifactId>
     </dependency>
 
     <dependency>
@@ -155,6 +154,10 @@
     <dependency>
       <groupId>org.apache.wicket</groupId>
       <artifactId>wicket-extensions</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.wicketstuff</groupId>
+      <artifactId>wicketstuff-input-events</artifactId>
     </dependency>
     <dependency>
       <groupId>org.wicketstuff</groupId>

@@ -21,6 +21,7 @@ import static de.tudarmstadt.ukp.clarin.webanno.api.ProjectService.ANNOTATION_FO
 import static de.tudarmstadt.ukp.clarin.webanno.api.ProjectService.DOCUMENT_FOLDER;
 import static de.tudarmstadt.ukp.clarin.webanno.api.ProjectService.PROJECT_FOLDER;
 import static de.tudarmstadt.ukp.clarin.webanno.api.annotation.util.WebAnnoCasUtil.setDocumentId;
+import static de.tudarmstadt.ukp.clarin.webanno.support.logging.BaseLoggers.BOOT_LOG;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.Files.move;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -99,12 +100,12 @@ public class FileSystemCasStorageDriver
         }
 
         if (backupProperties.getInterval() > 0) {
-            log.info("CAS backups enabled - interval: {}sec  max-backups: {}  max-age: {}sec",
+            BOOT_LOG.info("CAS backups enabled - interval: {}sec  max-backups: {}  max-age: {}sec",
                     backupProperties.getInterval(), backupProperties.getKeep().getNumber(),
                     backupProperties.getKeep().getTime());
         }
         else {
-            log.info("CAS backups disabled");
+            BOOT_LOG.info("CAS backups disabled");
         }
     }
 
@@ -121,7 +122,7 @@ public class FileSystemCasStorageDriver
         String msgOldExists = "";
         if (oldCasFile.exists()) {
             msgOldExists = String.format(
-                    "Existance of temporary annotation file [%s] indicates that a previous "
+                    "Existence of temporary annotation file [%s] indicates that a previous "
                             + "annotation storage process did not successfully complete. Contact "
                             + "your server administator and request renaming the '%s%s' file "
                             + "to '.ser' manually on the command line. Advise the administrator to "
@@ -478,8 +479,8 @@ public class FileSystemCasStorageDriver
                     }
                 }
             }
-            throw new ConcurentCasModificationException("While " + aContextAction
-                    + ", the file system CAS storage detected a concurrent modification to the annotation CAS for user ["
+            throw new ConcurentCasModificationException("While [" + aContextAction
+                    + "], the file system CAS storage detected a concurrent modification to the annotation CAS for user ["
                     + aUser + "] in document " + aDocument + " or project " + aDocument.getProject()
                     + " (expected: " + formatTimestamp(aExpectedTimeStamp) + " actual on storage: "
                     + formatTimestamp(diskLastModified) + ", delta: "

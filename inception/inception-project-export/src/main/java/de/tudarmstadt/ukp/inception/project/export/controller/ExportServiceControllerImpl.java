@@ -24,7 +24,6 @@ import static java.util.stream.Collectors.toList;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,7 +59,7 @@ import de.tudarmstadt.ukp.inception.project.export.model.RExportLogMessage;
 import io.swagger.v3.oas.annotations.Operation;
 
 @Controller
-@RequestMapping(ExportServiceController.API_BASE)
+@RequestMapping(ExportServiceController.BASE_URL)
 @ConditionalOnProperty(prefix = "websocket", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ExportServiceControllerImpl
     implements ExportServiceController
@@ -79,22 +78,11 @@ public class ExportServiceControllerImpl
     }
 
     @SubscribeMapping(NS_PROJECT + "/{projectId}/exports")
-    public List<MProjectExportStateUpdate> getCurrentExportStates(Principal aPrincipal,
+    public List<MProjectExportStateUpdate> getCurrentExportStates(
             @DestinationVariable("projectId") long aProjectId)
         throws AccessDeniedException
     {
-        // Should use this instead:
-        // https://newbedev.com/how-to-reject-topic-subscription-based-on-user-rights-with-spring-websocket
-        if (aPrincipal == null) {
-            throw new AccessDeniedException("Access denied");
-        }
-
         Project project = projectService.getProject(aProjectId);
-        User user = userService.get(aPrincipal.getName());
-
-        if (!projectService.hasRole(user, project, MANAGER) && !userService.isAdministrator(user)) {
-            throw new AccessDeniedException("Access denied");
-        }
 
         return projectExportService.listRunningExportTasks(project).stream() //
                 .map(taskInfo -> new MProjectExportStateUpdate(taskInfo.getMonitor())) //
@@ -128,7 +116,7 @@ public class ExportServiceControllerImpl
     }
 
     @Operation(summary = "Fetch export log messages")
-    @GetMapping(value = ("/export/{runId}/log"), produces = { "application/json" })
+    @GetMapping(value = ("/{runId}/log"), produces = { "application/json" })
     public ResponseEntity<List<RExportLogMessage>> projectExportLog(
             @PathVariable("runId") String aRunId)
         throws Exception
@@ -147,7 +135,7 @@ public class ExportServiceControllerImpl
     }
 
     @Operation(summary = "Download a finished export")
-    @GetMapping(value = ("/export/{runId}/data"), produces = { "application/zip" })
+    @GetMapping(value = ("/{runId}/data"), produces = { "application/zip" })
     public ResponseEntity<InputStreamResource> projectExportData(
             @PathVariable("runId") String aRunId)
         throws Exception
